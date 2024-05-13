@@ -72,6 +72,8 @@ $ ls [[:upper:]]*
 
 ```
 按tab可以补全一段命令，若有多种选择可以按两次，将会输出所有可能选择
+
+---
 ### 字符转义
 bash使用\进行转义，可选搭配包括：
 
@@ -102,6 +104,96 @@ $ echo "cal"
 #以原始格式输出日历(当然了，如果有这个函数的话)
 ```
 
+---
+### here文档
+here文档用于输入多行文本。只有可以接受标准文档输入的函数才能接受here文档（如echo就不行）。它只能作为参数而不能作为变量。
+```bash
+$ foo='hello world'
+$ cat << '_example_'
+$foo
+"$foo"
+'$foo'
+_example_
+#上面的指令将会输出
+#$foo
+#"$foo"
+#'$foo'
+#因为单引号内的here名称将不会解析其中的文本。若上文中的_example_不放在单引号内，输出：
+#hello world
+#"hello world"
+#'hello world'
+```
+它的变种here字符串也可用于将字符串通过标准输入传入参数：
+```bash
+$ cat <<< 'hi there'
+#等同于echo "hi there" | cat,输出hi there
+```
+
+---
+### 变量
+#### 环境变量
+环境变量是bash定义好的变量，可以直接使用。可以使用env命令输出所有环境变量。
+常见的环境变量如下图：
+![环境变量](environment_variable.png)
+查看单个变量的值可以用printenv命令或echo
+#### 自定义变量
+自定义变量是允许用户自定义的变量，只在当前SHELL可用，一旦退出SHELL就会析构。使用set命令以显示所有变量以及函数（超级长）。
+#### 创建变量
+创建变量的格式为variablename=value.变量名只能包含数字、字母与下划线，且首个字符不能为数字。变量的值可以包含空格，但当然要放在双引号里。对于有连续空格内容的变量，应当使用"$variablename"读取。
+```bash
+$ TEST="new name"
+#通常习惯性将变量名命名为大写
+$ TEST1=((1+2));TEST2=$(ls -l foo.txt)
+#同一行命名多个变量时用分号隔开，变量的赋值可以是函数的返回值或算式。
+$ ls ${a}_file;
+#通过加大括号避免$符号读取后面的其他内容。
+$ TEST3=TEST
+$ echo ${!TEST3}
+#通过加感叹号访问变量的最终值，否则输出TEST
+
+```
+#### 删除变量
+bash中删除变量实际上就是将这个变量设为空字符串，因此可以采用这几种方法：
+```bash
+$ unset TEST
+$ TEST=''
+$ TEST=
+```
+#### 输出变量
+bash中的子shell无法读取到父shell的变量。为了让它能够读取，可以将变量export：
+```bash
+$ export TEST="new name"
+#将定义与输出在同一步完成
+#完整的输出与继承流程如下：
+# 输出变量 $foo
+$ export foo=bar
+
+# 新建子 Shell
+$ bash
+
+# 读取 $foo
+$ echo $foo
+bar
+
+# 修改继承的变量
+$ foo=baz
+
+# 退出子 Shell
+$ exit
+
+# 读取 $foo，子shell中的更改不会影响父shell，正如CPP里的函数一样
+$ echo $foo
+bar
+```
+#### 一些特殊变量
+bash提供了一些特殊变量，它们不能被赋值：
+
+1. $?：指示前一个指令是否执行成功，是的话为零，否则不为零。
+2. \$$：输出当前进程的进程ID，常用于命名文件。
+3. $_：输出上一个命令的最后一个参数。
+4. $!：输出上一个异步线程的进程ID。
+5. $0：输出当前SHELL名称或脚本名。
+6. $-：输出当前SHELL的启动参数。
 ## 指令
 ### echo
 ``` bash
@@ -121,6 +213,7 @@ hello
 
 world
 
+---
 ### type
 type命令用于检测某一函数是否为bash内置的命令
 ```bash
@@ -129,6 +222,7 @@ $ type echo
 ```
 参数可以是-a,输出所有定义，-t,输出类型
 
+---
 ### touch
 touch命令用于创建或打开一个文件（mkdir用于创建一个新目录）,或更新文件的时间戳。用法如：
 ```bash
@@ -144,6 +238,7 @@ touch -a -m -d "2023-01-01 00:00:00" newfile.txt
 # 修改现有文件的时间戳
 touch -t 202301010000.txt existingfile.txt
 ```
+---
 ### shopt 
 shopt命令用于控制bash选项，其中包括：
 1. extglob：启用更复杂的模式匹配。
